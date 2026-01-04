@@ -27,7 +27,7 @@
     <property name="plugin.canloadatruntime" value="true"/>
     <property name="de.plugin.description" value="Untermenüs für Symbolleiste"/>
     <property name="plugin.icon" value="images/dialogs/toolbar.svg"/>
-    <!--<property name="plugin.link" value="..."/>-->
+    <property name="plugin.link" value="https://github.com/ds10git/josm-toolbarcategories-plugin"/>
     <!--<property name="plugin.early" value="..."/>-->
     <!--<property name="plugin.requires" value="..."/>-->
     <!--<property name="plugin.stage" value="..."/>-->
