@@ -25,6 +25,7 @@ import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
+import javax.swing.JSeparator;
 import javax.swing.JToolBar;
 import javax.swing.SwingUtilities;
 import javax.swing.event.PopupMenuEvent;
@@ -144,7 +145,7 @@ public class ToolbarCategoriesPlugin extends Plugin {
     containerAdapter = new ContainerAdapter() {
       @Override
       public void componentAdded(ContainerEvent e) {
-        if(!isLoading && lastAdded < System.currentTimeMillis()) {
+        if(!isLoading && lastAdded < System.currentTimeMillis() && !(e.getChild() instanceof JSeparator && ((JSeparator)e.getChild()).getOrientation() == JSeparator.HORIZONTAL)) {
           handleComponentAdded();
         }
       }
@@ -388,7 +389,7 @@ public class ToolbarCategoriesPlugin extends Plugin {
             
             for(int k = 0; k < toolbar.getComponentCount(); k++) {
               Component c = toolbar.getComponent(k);
-              
+                            
               if(c instanceof JButton && ((JButton)c).getAction() != null && Objects.equals(((JButton)c).getAction().getValue("toolbar"), actionId)) {
                 componentCurrent = (JButton)c;
                 
@@ -412,7 +413,10 @@ public class ToolbarCategoriesPlugin extends Plugin {
         
         for(int i = removeNames.size()-1; i >= 0; i--) {
           menuNames.remove((int)removeNames.get(i));
-          menus.remove((int)removeNames.get(i));
+          
+          if(menus.size() > i) {
+            menus.remove((int)removeNames.get(i));
+          }
         }        
       }
       
