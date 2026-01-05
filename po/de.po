@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-27 11:53+0100\n"
+"POT-Creation-Date: 2026-01-05 11:41+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\\nLanguage: de\n"
@@ -19,22 +19,47 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "\n"
 
-#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:76
+#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:78
+#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:254
 msgid "Add to toolbar category"
 msgstr "Zu Symbolleistenkategorie hinzufügen"
 
-#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:78
+#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:80
 msgid "Create category"
 msgstr "Kategorie erstellen"
 
-#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:80
+#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:82
 msgid "Please enter name of category"
 msgstr "Bitte den Namen der Kategorie eingeben"
 
-#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:80
+#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:82
 msgid "Name of category?"
 msgstr "Name der Kategorie?"
 
-#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:112
+#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:101
+msgid "Remove element"
+msgstr "Element entfernen"
+
+#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:145
+#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:254
 msgid "Reset category"
-msgstr "Kategrie zurücksetzen"
+msgstr "Kategorie zurücksetzen"
+
+#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:254
+#, java-format
+msgid ""
+"To add a toolbar element to a toolbar category open the context menu on that "
+"element and select:\n"
+"''{0}''\n"
+"\n"
+"To delete a toolbar category open the context menu on that category icon and "
+"select:\n"
+"''{1}''"
+msgstr ""
+"Um ein Element der Symbolleiste zu einer Kategorie hinzuzufügen, das Kontextmenü für das Element öffnen und Folgendes auswählen:\n"
+"''{0}''\n\n"
+"Um eine Symbolleistenkategorie zu löschen, das Kontextmenü für das Symbol der Kategorie öffnen und Folgendes auswählen:\n"
+"''{1}''"
+#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:254
+msgid "How to add categories to toolbar?"
+msgstr "Wie werden Kategorien zur Symbbolleiste hinzugefügt?"

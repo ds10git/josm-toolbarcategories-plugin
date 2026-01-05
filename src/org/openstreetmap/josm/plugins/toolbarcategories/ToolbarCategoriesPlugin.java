@@ -40,6 +40,7 @@ import org.openstreetmap.josm.plugins.PluginInformation;
 import org.openstreetmap.josm.spi.preferences.Config;
 
 public class ToolbarCategoriesPlugin extends Plugin {
+  private static final String KEY_INFO_SHOWN = ToolbarCategoriesPlugin.class.getSimpleName()+".infoShown";
   private static final String KEY_LIST_NAMES = ToolbarCategoriesPlugin.class.getSimpleName()+".namesList";
   private static final String KEY_LIST_ITEMS = ToolbarCategoriesPlugin.class.getSimpleName()+".itemsList";
     
@@ -97,12 +98,43 @@ public class ToolbarCategoriesPlugin extends Plugin {
     
     categoryAddTo.add(categoryCreate);
     
+    final JMenu removeAction = new JMenu(tr("Remove element"));
+    removeAction.setEnabled(false);
+    
     JPopupMenu resetMenu = new JPopupMenu();
     resetMenu.addPopupMenuListener(new PopupMenuListener() {
       @Override
-      public void popupMenuWillBecomeVisible(PopupMenuEvent e) {}
+      public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
+        if(componentCurrent != null) {
+          JPopupMenu m = menus.get(menuNames.indexOf(componentCurrent.getAction().getValue(Action.NAME)));
+          
+          for(int i = 1; i < m.getComponentCount(); i++) {
+            if(m.getComponent(i) instanceof JMenuItem) {
+              final int n = i;
+              
+              JMenuItem item = (JMenuItem)m.getComponent(n);
+              JMenuItem remove = new JMenuItem(item.getText(), item.getIcon());
+              remove.addActionListener(a -> {
+                m.remove(n);
+                clearListener();
+                save();
+                MainApplication.getToolbar().refreshToolbarControl();
+              });
+              removeAction.add(remove);
+            }
+            else if(m.getComponent(i) instanceof JPopupMenu.Separator) {
+              removeAction.addSeparator();
+            }
+          }
+          
+          removeAction.setEnabled(removeAction.getItemCount() > 0);
+        }
+      }
       @Override
-      public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {}
+      public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
+        removeAction.removeAll();
+        removeAction.setEnabled(false);
+      }
       
       @Override
       public void popupMenuCanceled(PopupMenuEvent e) {
@@ -114,14 +146,18 @@ public class ToolbarCategoriesPlugin extends Plugin {
       if(componentCurrent != null) {
         int index = menuNames.indexOf(componentCurrent.getAction().getValue(Action.NAME));
         
-        menuNames.remove(index);
-        menus.remove(index);
-        toolbarButtons.remove(index);
+        clearListener();
+        
+        removeFromLists(index);
+        
         save();
         
         MainApplication.getToolbar().refreshToolbarControl();
       }
     });
+    
+    resetMenu.addSeparator();
+    resetMenu.add(removeAction);
     
     resetPopupAdapter = new MouseAdapter() {
       @Override
@@ -136,8 +172,8 @@ public class ToolbarCategoriesPlugin extends Plugin {
       
       public void checkShowPopupMenu(MouseEvent e) {
         if(e.isPopupTrigger()) {
-          resetMenu.show(e.getComponent(), e.getX(), e.getY());
           componentCurrent = (JButton)e.getComponent();
+          resetMenu.show(e.getComponent(), e.getX(), e.getY());
         }
       }
     };
@@ -205,6 +241,20 @@ public class ToolbarCategoriesPlugin extends Plugin {
     
     if(newFrame != null) {
       MainApplication.getToolbar().control.addContainerListener(containerAdapter);
+      
+      if(!Config.getPref().getBoolean(KEY_INFO_SHOWN,false)) {
+        new Thread() {
+          @Override
+          public void run() {
+            try {
+              Thread.sleep(1000);
+            } catch (InterruptedException e) {}
+            
+            Config.getPref().putBoolean(KEY_INFO_SHOWN, true);
+            SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(MainApplication.getMainFrame(), tr("To add a toolbar element to a toolbar category open the context menu on that element and select:\n''{0}''\n\nTo delete a toolbar category open the context menu on that category icon and select:\n''{1}''",tr("Add to toolbar category"),tr("Reset category")), tr("How to add categories to toolbar?"), JOptionPane.INFORMATION_MESSAGE));
+          };
+        }.start();
+      }
     }
     
     if(!wasLoaded) {
@@ -365,11 +415,24 @@ public class ToolbarCategoriesPlugin extends Plugin {
     categoryAddTo.add(categoryCreate);
   }
   
+  private void removeFromLists(int index) {
+    menuNames.remove(index);
+    menus.remove(index);
+    toolbarButtons.remove(index);
+  }
+  
+  private void clearLists() {
+    clearListener();
+    
+    menuNames.clear();
+    menus.clear();
+    toolbarButtons.clear();    
+  }
+  
   private synchronized void load() {
     if(!isLoading) {
       isLoading = true;
-      menuNames.clear();
-      menus.clear();
+      clearLists();
      
       menuNames.addAll(Config.getPref().getList(KEY_LIST_NAMES, Collections.emptyList()));
       
@@ -417,7 +480,7 @@ public class ToolbarCategoriesPlugin extends Plugin {
           if(menus.size() > i) {
             menus.remove((int)removeNames.get(i));
           }
-        }        
+        }
       }
       
       wasLoaded = true;
@@ -441,6 +504,16 @@ public class ToolbarCategoriesPlugin extends Plugin {
         }
       };
       wait.start();
+    }
+  }
+  
+  private void clearListener() {
+    for(JPopupMenu m : menus) {
+      for(int i = 0; i < m.getComponentCount(); i++) {
+        if(m.getComponent(i) instanceof JMenuItem) {
+          m.getComponent(i).removePropertyChangeListener(enabledListener);
+        }
+      }
     }
   }
   
