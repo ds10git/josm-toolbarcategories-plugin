@@ -338,7 +338,7 @@ public class ToolbarCategoriesPlugin extends Plugin {
       MainApplication.getToolbar().control.addContainerListener(containerAdapter);
       Config.getPref().addKeyPreferenceChangeListener(KEY_MOUSE_MIDDLE_ENABLED, prefListener);
       
-      if(!Config.getPref().getBoolean(KEY_INFO_SHOWN,false) || true) {
+      if(!Config.getPref().getBoolean(KEY_INFO_SHOWN,false)) {
         new Thread() {
           @Override
           public void run() {
