@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-05 11:41+0100\n"
+"POT-Creation-Date: 2026-01-06 18:17+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\\nLanguage: de\n"
@@ -19,33 +19,37 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "\n"
 
-#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:78
-#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:254
+#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:94
+#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:350
 msgid "Add to toolbar category"
 msgstr "Zu Symbolleistenkategorie hinzufügen"
 
-#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:80
+#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:96
 msgid "Create category"
 msgstr "Kategorie erstellen"
 
-#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:82
+#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:98
 msgid "Please enter name of category"
 msgstr "Bitte den Namen der Kategorie eingeben"
 
-#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:82
+#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:98
 msgid "Name of category?"
 msgstr "Name der Kategorie?"
 
-#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:101
+#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:117
+msgid "Add separator above"
+msgstr "Trenner darüber einfügen"
+
+#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:120
 msgid "Remove element"
 msgstr "Element entfernen"
 
-#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:145
-#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:254
+#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:185
+#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:350
 msgid "Reset category"
 msgstr "Kategorie zurücksetzen"
 
-#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:254
+#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:350
 #, java-format
 msgid ""
 "To add a toolbar element to a toolbar category open the context menu on that "
@@ -54,12 +58,35 @@ msgid ""
 "\n"
 "To delete a toolbar category open the context menu on that category icon and "
 "select:\n"
-"''{1}''"
+"''{1}''\n"
+"\n"
+"The first action inside a category can directly be accessed with clicking on "
+"the category icon with the middle mouse button.\n"
+"\n"
+"The same function of the middle mouse button is added to all other toolbar "
+"elements.\n"
+"\n"
+"To disabled the middle mouse button for the other elements set ''false'' as "
+"value for the preference ''{2}''"
 msgstr ""
-"Um ein Element der Symbolleiste zu einer Kategorie hinzuzufügen, das Kontextmenü für das Element öffnen und Folgendes auswählen:\n"
-"''{0}''\n\n"
-"Um eine Symbolleistenkategorie zu löschen, das Kontextmenü für das Symbol der Kategorie öffnen und Folgendes auswählen:\n"
-"''{1}''"
-#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:254
+"Um ein Element der Symbolleiste zu einer Kategorie hinzuzufügen, das "
+"Kontextmenü für das Element öffnen und Folgendes auswählen:\n"
+"''{0}''\n"
+"\n"
+"Um eine Symbolleistenkategorie zu löschen, das Kontextmenü für das Symbol "
+"der Kategorie öffnen und Folgendes auswählen:\n"
+"''{1}''\n"
+"\n"
+"Das erste Element innerhalb einer Kategorie kann direkt durch Klicken mit "
+"der mittleren Maustaste auf das Symbol der Kategorie ausgeführt werden.\n\n"
+"Dieselbe Funktion der mittleren Maustaste wird zu allen anderen Elementen in "
+"der Symbbolleiste hinzugefügt.\n\nUm die Funktion der mittleren Maustaste für "
+"die anderen Elemente zu deaktivieren den Wert ''false'' für die folgende Einstellung setzen:"
+"\n''{2}''"
+#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:350
 msgid "How to add categories to toolbar?"
 msgstr "Wie werden Kategorien zur Symbbolleiste hinzugefügt?"
+
+#: ../src/org/openstreetmap/josm/plugins/toolbarcategories/ToolbarCategoriesPlugin.java:540
+msgid "At the end"
+msgstr "Am Ende"

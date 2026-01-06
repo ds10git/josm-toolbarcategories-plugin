@@ -19,7 +19,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
-import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
@@ -38,11 +37,16 @@ import org.openstreetmap.josm.gui.tagging.presets.TaggingPresetMenu;
 import org.openstreetmap.josm.plugins.Plugin;
 import org.openstreetmap.josm.plugins.PluginInformation;
 import org.openstreetmap.josm.spi.preferences.Config;
+import org.openstreetmap.josm.spi.preferences.PreferenceChangedListener;
 
 public class ToolbarCategoriesPlugin extends Plugin {
   private static final String KEY_INFO_SHOWN = ToolbarCategoriesPlugin.class.getSimpleName()+".infoShown";
   private static final String KEY_LIST_NAMES = ToolbarCategoriesPlugin.class.getSimpleName()+".namesList";
   private static final String KEY_LIST_ITEMS = ToolbarCategoriesPlugin.class.getSimpleName()+".itemsList";
+  
+  private static final String KEY_MOUSE_MIDDLE_ENABLED = ToolbarCategoriesPlugin.class.getSimpleName()+".middleMouseButtonForOtherToolbarActions";
+  
+  private static final String SEPARATOR = "-S-E-P-A-R-A-T-O-R-";
     
   private final List<JPopupMenu> menus;
   private final List<String> menuNames;
@@ -54,8 +58,9 @@ public class ToolbarCategoriesPlugin extends Plugin {
   private JButton componentCurrent;
   private Component separator;
   
+  private final JPopupMenu categoryMenu;
   private final ContainerAdapter containerAdapter;
-  private final MouseAdapter resetPopupAdapter;
+  private final MouseAdapter buttonsAdapter;
   
   private Thread wait;
   private long lastAdded;
@@ -65,6 +70,9 @@ public class ToolbarCategoriesPlugin extends Plugin {
   
   private boolean isLoading;
   private boolean wasLoaded;
+  private boolean middleMouseButtonForOtherToolbarActions;
+  
+  private final PreferenceChangedListener prefListener;
   
   private final PropertyChangeListener enabledListener;
   
@@ -75,6 +83,14 @@ public class ToolbarCategoriesPlugin extends Plugin {
     menuNames = new LinkedList<>();
     toolbarButtons = new LinkedList<>();
     
+    middleMouseButtonForOtherToolbarActions = Config.getPref().getBoolean(KEY_MOUSE_MIDDLE_ENABLED, true);
+    
+    prefListener = e -> {
+      boolean oldValue = middleMouseButtonForOtherToolbarActions;
+      middleMouseButtonForOtherToolbarActions = Config.getPref().getBoolean(KEY_MOUSE_MIDDLE_ENABLED, true);
+      updateMiddleMouseButtonForOtherToolbarActions(oldValue);
+    };
+    
     categoryAddTo = new JMenu(tr("Add to toolbar category"));
     categoryAddTo.setEnabled(false);
     categoryCreate = new JMenuItem(tr("Create category"));
@@ -84,7 +100,7 @@ public class ToolbarCategoriesPlugin extends Plugin {
       if(name != null && !name.isBlank()) {
         for(int i = 0; i < menuNames.size(); i++) {
           if(Objects.equals(menuNames.get(i), name)) {
-            addToCategory(menus.get(i), true, true);
+            addToCategory(menus.get(i), true, true, -1);
             return;
           }
         }
@@ -98,51 +114,75 @@ public class ToolbarCategoriesPlugin extends Plugin {
     
     categoryAddTo.add(categoryCreate);
     
+    final JMenu addSeparatorAction = new JMenu(tr("Add separator above"));
+    addSeparatorAction.setEnabled(false);
+    
     final JMenu removeAction = new JMenu(tr("Remove element"));
     removeAction.setEnabled(false);
     
-    JPopupMenu resetMenu = new JPopupMenu();
-    resetMenu.addPopupMenuListener(new PopupMenuListener() {
+    categoryMenu = new JPopupMenu();
+    categoryMenu.addPopupMenuListener(new PopupMenuListener() {
       @Override
       public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
-        if(componentCurrent != null) {
-          JPopupMenu m = menus.get(menuNames.indexOf(componentCurrent.getAction().getValue(Action.NAME)));
+        if(((JPopupMenu)e.getSource()).getInvoker() instanceof JButton) {
+          int index = menuNames.indexOf(((JButton)((JPopupMenu)e.getSource()).getInvoker()).getAction().getValue(Action.NAME));
           
-          for(int i = 1; i < m.getComponentCount(); i++) {
-            if(m.getComponent(i) instanceof JMenuItem) {
+          if(index >= 0) {
+            JPopupMenu m = menus.get(index);
+            
+            for(int i = 1; i < m.getComponentCount(); i++) {
               final int n = i;
               
-              JMenuItem item = (JMenuItem)m.getComponent(n);
-              JMenuItem remove = new JMenuItem(item.getText(), item.getIcon());
-              remove.addActionListener(a -> {
-                m.remove(n);
-                clearListener();
-                save();
-                MainApplication.getToolbar().refreshToolbarControl();
-              });
-              removeAction.add(remove);
+              if(m.getComponent(i) instanceof JMenuItem) {
+                JMenuItem item = (JMenuItem)m.getComponent(n);
+                JMenuItem remove = new JMenuItem(item.getText(), item.getIcon());
+                remove.addActionListener(a -> {
+                  m.remove(n);
+                  clearListener();
+                  save();
+                  MainApplication.getToolbar().refreshToolbarControl();
+                });
+                removeAction.add(remove);
+                
+                JMenuItem addSeparator = new JMenuItem(item.getText(), item.getIcon());
+                addSeparator.addActionListener(a -> {
+                  m.add(new JPopupMenu.Separator(), n);
+                  save();
+                });
+                addSeparatorAction.add(addSeparator);
+              }
+              else if(m.getComponent(i) instanceof JPopupMenu.Separator) {
+                JPopupMenu.Separator sep = new JPopupMenu.Separator();
+                sep.addMouseListener(new MouseAdapter() {
+                  public void mouseClicked(MouseEvent e) {
+                    m.remove(n);
+                    categoryMenu.setVisible(false);
+                    save();
+                  };
+                });
+                removeAction.add(sep);
+                addSeparatorAction.addSeparator();
+              }
             }
-            else if(m.getComponent(i) instanceof JPopupMenu.Separator) {
-              removeAction.addSeparator();
-            }
+            
+            removeAction.setEnabled(removeAction.getItemCount() > 0);
+            addSeparatorAction.setEnabled(removeAction.getItemCount() > 0);
           }
-          
-          removeAction.setEnabled(removeAction.getItemCount() > 0);
         }
       }
       @Override
       public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
         removeAction.removeAll();
         removeAction.setEnabled(false);
+        addSeparatorAction.removeAll();
+        addSeparatorAction.setEnabled(false);
       }
       
       @Override
-      public void popupMenuCanceled(PopupMenuEvent e) {
-        componentCurrent = null;        
-      }
+      public void popupMenuCanceled(PopupMenuEvent e) {}
     });
     
-    resetMenu.add(tr("Reset category")).addActionListener(e -> {
+    categoryMenu.add(tr("Reset category")).addActionListener(e -> {
       if(componentCurrent != null) {
         int index = menuNames.indexOf(componentCurrent.getAction().getValue(Action.NAME));
         
@@ -156,27 +196,9 @@ public class ToolbarCategoriesPlugin extends Plugin {
       }
     });
     
-    resetMenu.addSeparator();
-    resetMenu.add(removeAction);
-    
-    resetPopupAdapter = new MouseAdapter() {
-      @Override
-      public void mousePressed(MouseEvent e) {
-        checkShowPopupMenu(e);
-      }
-      
-      @Override
-      public void mouseReleased(MouseEvent e) {
-        checkShowPopupMenu(e);
-      }
-      
-      public void checkShowPopupMenu(MouseEvent e) {
-        if(e.isPopupTrigger()) {
-          componentCurrent = (JButton)e.getComponent();
-          resetMenu.show(e.getComponent(), e.getX(), e.getY());
-        }
-      }
-    };
+    categoryMenu.addSeparator();
+    categoryMenu.add(addSeparatorAction);
+    categoryMenu.add(removeAction);
     
     containerAdapter = new ContainerAdapter() {
       @Override
@@ -187,6 +209,61 @@ public class ToolbarCategoriesPlugin extends Plugin {
       }
     };
     
+    buttonsAdapter = new MouseAdapter() {
+      @Override
+      public void mouseClicked(MouseEvent e) {
+        if(SwingUtilities.isMiddleMouseButton(e)) {
+          int modifiers = 0;
+          
+          if((e.getModifiersEx() & MouseEvent.CTRL_DOWN_MASK) == MouseEvent.CTRL_DOWN_MASK) {
+            modifiers |= ActionEvent.CTRL_MASK;
+          }
+          if((e.getModifiersEx() & MouseEvent.SHIFT_DOWN_MASK) == MouseEvent.SHIFT_DOWN_MASK) {
+            modifiers |= ActionEvent.SHIFT_MASK;
+          }
+          if((e.getModifiersEx() & MouseEvent.ALT_DOWN_MASK) == MouseEvent.ALT_DOWN_MASK) {
+            modifiers |= ActionEvent.ALT_MASK;
+          }
+          if((e.getModifiersEx() & MouseEvent.META_DOWN_MASK) == MouseEvent.META_DOWN_MASK) {
+            modifiers |= ActionEvent.META_MASK;
+          }
+          
+          int index = toolbarButtons.indexOf(e.getComponent());
+          Action a = null;
+          
+          if(index >= 0) {
+            JMenuItem c = findMenuItem((JMenuItem)menus.get(index).getComponent(0));
+            
+            if(!(c instanceof JMenu) && c instanceof JMenuItem && c.getAction() != null) {
+              a = c.getAction();
+            }
+          }
+          else {
+            Point p = MouseInfo.getPointerInfo().getLocation();
+            SwingUtilities.convertPointFromScreen(p, MainApplication.getToolbar().control);
+            
+            Component c = MainApplication.getToolbar().control.getComponentAt(p);
+            
+            if(c instanceof JButton) {
+              a = ((JButton)c).getAction();
+              
+              if(a instanceof TaggingPresetMenu) {
+                JMenuItem m = findMenuItem(((TaggingPresetMenu)a).menu);
+                
+                if(!(m instanceof JMenu)) {
+                  a = m.getAction();
+                }
+              }
+            }
+          }
+          
+          if(a != null) {
+            a.actionPerformed(new ActionEvent(e.getComponent(), 0, "", System.currentTimeMillis(), modifiers));
+          }
+        }
+      }
+    };
+        
     enabledListener = e -> {
       updateEnabledState();
     };
@@ -231,18 +308,37 @@ public class ToolbarCategoriesPlugin extends Plugin {
     }
   }
   
+  private JMenuItem findMenuItem(JMenuItem c) {
+    boolean found = true;
+    while(found && c instanceof JMenu) {
+      found = false;
+      
+      for(int i = 0; i < ((JMenu)c).getItemCount(); i++) {
+        if(((JMenu)c).getItem(i) instanceof JMenuItem) {
+          c = (JMenuItem)((JMenu)c).getItem(i);
+          found = true;
+          break;
+        }
+      }
+    }
+    
+    return c;
+  }
+  
   @Override
   public void mapFrameInitialized(MapFrame oldFrame, MapFrame newFrame) {
     if(oldFrame != null) {
       MainApplication.getToolbar().control.removeContainerListener(containerAdapter);
+      Config.getPref().removeKeyPreferenceChangeListener(KEY_MOUSE_MIDDLE_ENABLED, prefListener);
     }
     
     categoryAddTo.setEnabled(newFrame != null);
     
     if(newFrame != null) {
       MainApplication.getToolbar().control.addContainerListener(containerAdapter);
+      Config.getPref().addKeyPreferenceChangeListener(KEY_MOUSE_MIDDLE_ENABLED, prefListener);
       
-      if(!Config.getPref().getBoolean(KEY_INFO_SHOWN,false)) {
+      if(!Config.getPref().getBoolean(KEY_INFO_SHOWN,false) || true) {
         new Thread() {
           @Override
           public void run() {
@@ -251,7 +347,7 @@ public class ToolbarCategoriesPlugin extends Plugin {
             } catch (InterruptedException e) {}
             
             Config.getPref().putBoolean(KEY_INFO_SHOWN, true);
-            SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(MainApplication.getMainFrame(), tr("To add a toolbar element to a toolbar category open the context menu on that element and select:\n''{0}''\n\nTo delete a toolbar category open the context menu on that category icon and select:\n''{1}''",tr("Add to toolbar category"),tr("Reset category")), tr("How to add categories to toolbar?"), JOptionPane.INFORMATION_MESSAGE));
+            SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(MainApplication.getMainFrame(), tr("To add a toolbar element to a toolbar category open the context menu on that element and select:\n''{0}''\n\nTo delete a toolbar category open the context menu on that category icon and select:\n''{1}''\n\nThe first action inside a category can directly be accessed with clicking on the category icon with the middle mouse button.\n\nThe same function of the middle mouse button is added to all other toolbar elements.\n\nTo disabled the middle mouse button for the other elements set ''false'' as value for the preference ''{2}''", tr("Add to toolbar category"), tr("Reset category"), KEY_MOUSE_MIDDLE_ENABLED), tr("How to add categories to toolbar?"), JOptionPane.INFORMATION_MESSAGE));
           };
         }.start();
       }
@@ -261,9 +357,9 @@ public class ToolbarCategoriesPlugin extends Plugin {
       load();
     }
   }
-  
+    
   private JPopupMenu createPopupMenu(JPopupMenu m, String name, boolean save) {
-    ToolbarCategoryAction popupAction = new ToolbarCategoryAction(m, name, componentCurrent.getIcon());
+    ToolbarCategoryAction popupAction = new ToolbarCategoryAction(m, name, componentCurrent);
     JToolBar toolbar = MainApplication.getToolbar().control;
     
     int index = removeCurrentComponentFromToolbar(true);
@@ -276,15 +372,16 @@ public class ToolbarCategoriesPlugin extends Plugin {
     }
     
     popupAction.setParent(component);
-    component.addMouseListener(resetPopupAdapter);
     toolbarButtons.add(component);
+    component.addMouseListener(buttonsAdapter);
+    component.setComponentPopupMenu(categoryMenu);
     
     if(index != -1) {
       toolbar.remove(component);
       toolbar.add(component, index);
     }
         
-    addToCategory(m, false, save);
+    addToCategory(m, false, save, -1);
     toolbar.repaint();
     
     return m;
@@ -329,7 +426,7 @@ public class ToolbarCategoriesPlugin extends Plugin {
     return m;
   }
   
-  private void addToCategory(JPopupMenu menu, boolean remove, boolean save) {
+  private void addToCategory(JPopupMenu menu, boolean remove, boolean save, int n) {
     removeCurrentComponentFromToolbar(remove);
     
     Action a = componentCurrent.getAction();
@@ -338,9 +435,19 @@ public class ToolbarCategoriesPlugin extends Plugin {
     
     if(a instanceof TaggingPresetMenu) {
       item = menu.add(createMenu(((TaggingPresetMenu)a).menu));
+      
+      if(n >= 0) {
+        menu.remove(item);
+        menu.add(item, n);
+      }
     }
     else {
       item = menu.add(a);
+      
+      if(n >= 0) {
+        menu.remove(item);
+        menu.add(item, n);
+      }
       
       if(a instanceof TaggingPreset) {
         item.setText(((TaggingPreset)a).getLocaleName());
@@ -373,7 +480,7 @@ public class ToolbarCategoriesPlugin extends Plugin {
             AtomicBoolean enabled = new AtomicBoolean();
             
             for(int i = 0; i < m.getComponentCount(); i++) {
-              if(m.getComponent(i).isEnabled()) {
+              if(!(m.getComponent(i) instanceof JPopupMenu.Separator) && m.getComponent(i).isEnabled()) {
                 enabled.set(true);
               }
             }
@@ -398,13 +505,47 @@ public class ToolbarCategoriesPlugin extends Plugin {
     m.add(categoryAddTo, 0);
     
     for(int i = 0; i < Math.min(menuNames.size(),menus.size()); i++) {
-      JMenuItem category = new JMenuItem(menuNames.get(i));
+      JMenu category = new JMenu(menuNames.get(i));
+      
       JPopupMenu menu = menus.get(i);
-      category.addActionListener(e -> {
-        addToCategory(menu, true, true);
-        MainApplication.getToolbar().control.repaint();
+      
+      for(int k = 1; k < menu.getComponentCount(); k++) {
+        final int n = k;
+        
+        if(menu.getComponent(k) instanceof JMenuItem) {
+          JMenuItem item = (JMenuItem)menu.getComponent(n);
+          JMenuItem add = new JMenuItem(item.getText(), item.getIcon());
+          add.addActionListener(a -> {
+            addToCategory(menu, true, true, n);
+            MainApplication.getToolbar().control.repaint();
+          });
+          
+          category.add(add);
+        }
+        else if(menu.getComponent(k) instanceof JPopupMenu.Separator) {
+          JPopupMenu.Separator sep = new JPopupMenu.Separator();
+          sep.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent e) {
+              addToCategory(menu, true, true, n);
+              category.setPopupMenuVisible(false);
+              categoryAddTo.setPopupMenuVisible(false);
+              categoryAddTo.getParent().setVisible(false);
+              MainApplication.getToolbar().control.repaint();
+            };
+          });
+          category.add(sep);
+        }
+      }
+      
+      JMenuItem atTheEnd = new JMenuItem(tr("At the end"));
+      atTheEnd.addActionListener(a -> {
+        addToCategory(menu, true, true, -1);
+        MainApplication.getToolbar().control.repaint();          
       });
       
+      category.addSeparator();
+      category.add(atTheEnd);
+    
       categoryAddTo.add(category);
     }
     
@@ -431,6 +572,7 @@ public class ToolbarCategoriesPlugin extends Plugin {
   
   private synchronized void load() {
     if(!isLoading) {
+      JToolBar toolbar = MainApplication.getToolbar().control;
       isLoading = true;
       clearLists();
      
@@ -439,8 +581,6 @@ public class ToolbarCategoriesPlugin extends Plugin {
       List<Integer> removeNames = new LinkedList<>();
       
       if(!menuNames.isEmpty()) {
-        JToolBar toolbar = MainApplication.getToolbar().control;
-        
         List<List<String>> itemList = Config.getPref().getListOfLists(KEY_LIST_ITEMS);
         
         for(int j = 0; j < menuNames.size(); j++) {
@@ -450,21 +590,26 @@ public class ToolbarCategoriesPlugin extends Plugin {
           for(int i = 0; i < list.size(); i++) {
             String actionId = list.get(i);
             
-            for(int k = 0; k < toolbar.getComponentCount(); k++) {
-              Component c = toolbar.getComponent(k);
-                            
-              if(c instanceof JButton && ((JButton)c).getAction() != null && Objects.equals(((JButton)c).getAction().getValue("toolbar"), actionId)) {
-                componentCurrent = (JButton)c;
-                
-                if(m.getComponentCount() == 0) {
-                  menus.add(createPopupMenu(m, menuNames.get(j), false));
+            if(Objects.equals(SEPARATOR, actionId)) {
+              m.addSeparator();
+            }
+            else {
+              for(int k = 0; k < toolbar.getComponentCount(); k++) {
+                Component c = toolbar.getComponent(k);
+                              
+                if(c instanceof JButton && ((JButton)c).getAction() != null && Objects.equals(((JButton)c).getAction().getValue("toolbar"), actionId)) {
+                  componentCurrent = (JButton)c;
+                  
+                  if(m.getComponentCount() == 0) {
+                    menus.add(createPopupMenu(m, menuNames.get(j), false));
+                  }
+                  else {
+                    addToCategory(menus.get(j), true, false, -1);
+                  }
+                  
+                  componentCurrent = null;
+                  break;
                 }
-                else {
-                  addToCategory(menus.get(j), true, false);
-                }
-                
-                componentCurrent = null;
-                break;
               }
             }
           }
@@ -477,11 +622,13 @@ public class ToolbarCategoriesPlugin extends Plugin {
         for(int i = removeNames.size()-1; i >= 0; i--) {
           menuNames.remove((int)removeNames.get(i));
           
-          if(menus.size() > i) {
+          if(menus.size() > (int)removeNames.get(i)) {
             menus.remove((int)removeNames.get(i));
           }
         }
       }
+      
+      updateMiddleMouseButtonForOtherToolbarActions(false);
       
       wasLoaded = true;
       isLoading = false;
@@ -515,6 +662,11 @@ public class ToolbarCategoriesPlugin extends Plugin {
         }
       }
     }
+    
+    for(JButton b : toolbarButtons) {
+      b.removeMouseListener(buttonsAdapter);
+      b.setComponentPopupMenu(null);
+    }
   }
   
   private void save() {
@@ -534,22 +686,48 @@ public class ToolbarCategoriesPlugin extends Plugin {
             items.add((String)a.getValue("toolbar"));
           }
         }
+        else if(m.getComponent(i) instanceof JPopupMenu.Separator) {
+          items.add(SEPARATOR);
+        }
       }
     }
     
     Config.getPref().putListOfLists(KEY_LIST_ITEMS, itemList);
   }
   
+  private void updateMiddleMouseButtonForOtherToolbarActions(boolean oldValue) {
+    JToolBar toolbar = MainApplication.getToolbar().control;
+    
+    if(oldValue && !middleMouseButtonForOtherToolbarActions) {
+      for(int k = 0; k < toolbar.getComponentCount(); k++) {
+        Component c = toolbar.getComponent(k);
+        
+        if(c instanceof JButton && !(((JButton)c).getAction() instanceof ToolbarCategoryAction)) {
+          c.removeMouseListener(buttonsAdapter);
+        }
+      }
+    }
+    else if(!oldValue && middleMouseButtonForOtherToolbarActions) {
+      for(int k = 0; k < toolbar.getComponentCount(); k++) {
+        Component c = toolbar.getComponent(k);
+        
+        if(c instanceof JButton && !(((JButton)c).getAction() instanceof ToolbarCategoryAction)) {
+          c.addMouseListener(buttonsAdapter);
+        }
+      }
+    }
+  }
+  
   private static final class ToolbarCategoryAction extends AbstractAction {
     private JButton parent;
     private JPopupMenu menu;
     
-    public ToolbarCategoryAction(JPopupMenu menu, String name, Icon icon) {
+    public ToolbarCategoryAction(JPopupMenu menu, String name, JButton componentCurrent) {
       this.menu = menu;
       putValue("toolbar", ToolbarCategoriesPlugin.class.getSimpleName()+"-"+System.currentTimeMillis()+"_"+Math.random()*10000);
       putValue(Action.NAME, name);
       putValue(Action.SHORT_DESCRIPTION, name);
-      putValue(Action.LARGE_ICON_KEY, icon);
+      putValue(Action.LARGE_ICON_KEY, componentCurrent.getIcon());
     }
     
     public void setParent(JButton parent) {
