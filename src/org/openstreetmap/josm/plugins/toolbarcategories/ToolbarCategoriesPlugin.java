@@ -124,8 +124,8 @@ public class ToolbarCategoriesPlugin extends Plugin {
     categoryMenu.addPopupMenuListener(new PopupMenuListener() {
       @Override
       public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
-        if(((JPopupMenu)e.getSource()).getInvoker() instanceof JButton) {
-          int index = menuNames.indexOf(((JButton)((JPopupMenu)e.getSource()).getInvoker()).getAction().getValue(Action.NAME));
+        if(categoryMenu.getInvoker() instanceof JButton) {
+          int index = menuNames.indexOf(((JButton)categoryMenu.getInvoker()).getAction().getValue(Action.NAME));
           
           if(index >= 0) {
             JPopupMenu m = menus.get(index);
@@ -183,16 +183,17 @@ public class ToolbarCategoriesPlugin extends Plugin {
     });
     
     categoryMenu.add(tr("Reset category")).addActionListener(e -> {
-      if(componentCurrent != null) {
-        int index = menuNames.indexOf(componentCurrent.getAction().getValue(Action.NAME));
+      if(categoryMenu.getInvoker() instanceof JButton) {
+        int index = menuNames.indexOf(((JButton)categoryMenu.getInvoker()).getAction().getValue(Action.NAME));
         
-        clearListener();
-        
-        removeFromLists(index);
-        
-        save();
-        
-        MainApplication.getToolbar().refreshToolbarControl();
+        if(index >= 0) {
+          clearListener();
+          
+          removeFromLists(index);
+          save();
+          
+          MainApplication.getToolbar().refreshToolbarControl();          
+        }
       }
     });
     
